@@ -438,7 +438,7 @@ input.style.borderWidth = 0;
 input.style.paddingBottom = '7px';
 input.style.borderBottomStyle = 'solid';
 input.style.borderBottomWidth = '1px';
-input.placeholder = 'Enter SoundCloud Track URL.'
+input.placeholder = 'Enter SoundCloud track URL'
 
 div.appendChild(input);
 
