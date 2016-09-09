@@ -275,7 +275,9 @@ const line = regl({
 let linePoints;
 let i = 0;
 const colorScale = chroma.scale(['green', 'white']).domain([0, 256 * 1.5 * 1024]);
-const lineScale = scale.scaleLinear().domain([0, 256 * 1024]).range([2, 5]);
+
+const lineLims = regl.limits.lineWidthDims;
+const lineScale = scale.scaleLinear().domain([0, 256 * 1024]).range([Math.min(Math.max(lineLims[0], 2), lineLims[1]), Math.min(5, lineLims[1])]);
 let size, wm, anim, sum, col;
 
 const waveform = new Uint8Array(1024);
@@ -436,7 +438,7 @@ input.style.borderWidth = 0;
 input.style.paddingBottom = '7px';
 input.style.borderBottomStyle = 'solid';
 input.style.borderBottomWidth = '1px';
-input.placeholder = 'Enter SoundCloud URL.'
+input.placeholder = 'Enter SoundCloud Track URL.'
 
 div.appendChild(input);
 
