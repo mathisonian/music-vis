@@ -1,0 +1,34 @@
+{
+  "name": "line-glow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "budo index.js --live -o -- -t [ babelify --presets [ es2015 ]]",
+    "build": "browserify index -t [ babelify --presets [ es2015 ]] > bundle.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "adaptive-bezier-curve": "^1.0.3",
+    "bezier": "^0.1.0",
+    "canvas-fit": "^1.5.0",
+    "chroma-js": "^1.2.1",
+    "d3-scale": "^1.0.3",
+    "d3-shape": "^1.0.3",
+    "glsl-fast-gaussian-blur": "^1.0.2",
+    "regl": "^1.1.1",
+    "regl-tween": "^1.1.2",
+    "soundcloud-badge": "^1.1.0",
+    "soundcloud-mp3": "^1.0.0",
+    "web-audio-analyser": "^2.0.1"
+  },
+  "devDependencies": {
+    "babel-preset-es2015": "^6.14.0",
+    "babelify": "^7.3.0",
+    "browserify": "^13.1.0",
+    "budo": "^9.0.0",
+    "glslify": "^5.1.0"
+  }
+}
