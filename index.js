@@ -15,7 +15,15 @@ function getParameterByName(name, url) {
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-const canvas = document.body.appendChild(document.createElement('canvas'))
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+
+const context = canvas.getContext('webgl')
+  || canvas.getContext('experimental-webgl')
+  || canvas.getContext('webgl-experimental')
+  || canvas.getContext('moz-webgl')
+  || canvas.getContext('webkit-3d');
+
 const fit = require('canvas-fit');
 const bezier = require('adaptive-bezier-curve');
 
@@ -45,7 +53,7 @@ scb({
     client_id: '596b2beb928d826f92ee9807351fa9fd',
     song: songQuery ? songQuery : 'https://soundcloud.com/xeni_kott/jan-jelinek-loop-finding-jazz-records',
     dark: false,
-    getFonts: true
+    getFonts: false
 }, function(err, src, data, div) {
   if (err) {
     alert('Problem fetching song from soundcloud. Check the URL, if this problem persists try a different song. Not all have correct permissions to be streamed.')
@@ -105,9 +113,7 @@ const lineGenerator = d3.line()
 
 window.addEventListener('resize', fit(canvas), false)
 
-const regl = require('regl')({
-  canvas: canvas
-});
+const regl = require('regl')(context || canvas);
 var tween = require('regl-tween')(regl);
 
 const generatePoints = () => {
