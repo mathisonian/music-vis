@@ -40,7 +40,7 @@ const audio = new Audio();
 audio.crossOrigin = 'Anonymous';
 
 audio.loop = false;
-let analyser;
+var analyser;
 
 audio.addEventListener('canplay', function() {
   analyser = require('web-audio-analyser')(audio, { audible: true, stereo: true });
@@ -284,7 +284,7 @@ const colorScale = chroma.scale(['green', 'white']).domain([0, 256 * 1.5 * 1024]
 
 const lineLims = regl.limits.lineWidthDims;
 const lineScale = scale.scaleLinear().domain([0, 256 * 1024]).range([Math.min(Math.max(lineLims[0], 2), lineLims[1]), Math.min(5, lineLims[1])]);
-let size, wm, anim, sum, col;
+var size, wm, anim, sum, col;
 
 const waveform = new Uint8Array(1024);
 

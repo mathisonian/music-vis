@@ -1,61 +1,66 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+"use strict";
 
 document.body.style.margin = 0;
 document.body.style.padding = 0;
 
-const width = window.innerWidth;
-const height = window.innerHeight;
+var width = window.innerWidth;
+var height = window.innerHeight;
 
 function getParameterByName(name, url) {
-    if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, "\\$&");
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
+  if (!url) url = window.location.href;
+  name = name.replace(/[\[\]]/g, "\\$&");
+  var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+      results = regex.exec(url);
+  if (!results) return null;
+  if (!results[2]) return '';
+  return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-const canvas = document.body.appendChild(document.createElement('canvas'))
-const fit = require('canvas-fit');
-const bezier = require('adaptive-bezier-curve');
+var canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
 
-const chroma = require('chroma-js');
+var context = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') || canvas.getContext('webgl-experimental') || canvas.getContext('moz-webgl') || canvas.getContext('webkit-3d');
 
-const d3 = require('d3-shape');
-const scale = require('d3-scale');
+var fit = require('canvas-fit');
+var bezier = require('adaptive-bezier-curve');
 
-const x = scale.scaleLinear().domain([-1024 * 0.75, 1024 * 0.75]).range([1, -1]);
-const yRangeScale = scale.scaleLinear().domain([0, 256 * 1024]).range([0.0, 1.0]);
-const y = scale.scaleLinear().domain([0, 256 * 2]).range([0.0, -0.5]);
+var chroma = require('chroma-js');
 
-const audio = new Audio();
+var d3 = require('d3-shape');
+var scale = require('d3-scale');
+
+var x = scale.scaleLinear().domain([-1024 * 0.75, 1024 * 0.75]).range([1, -1]);
+var yRangeScale = scale.scaleLinear().domain([0, 256 * 1024]).range([0.0, 1.0]);
+var y = scale.scaleLinear().domain([0, 256 * 2]).range([0.0, -0.5]);
+
+var audio = new Audio();
 audio.crossOrigin = 'Anonymous';
 
 audio.loop = false;
-let analyser;
+var analyser;
 
-audio.addEventListener('canplay', function() {
+audio.addEventListener('canplay', function () {
   analyser = require('web-audio-analyser')(audio, { audible: true, stereo: true });
   audio.play();
 });
 
-const scb = require('soundcloud-badge');
-const songQuery = getParameterByName('song');
+var scb = require('soundcloud-badge');
+var songQuery = getParameterByName('song');
 scb({
-    client_id: '596b2beb928d826f92ee9807351fa9fd',
-    song: songQuery ? songQuery : 'https://soundcloud.com/xeni_kott/jan-jelinek-loop-finding-jazz-records',
-    dark: false,
-    getFonts: true
-}, function(err, src, data, div) {
+  client_id: '596b2beb928d826f92ee9807351fa9fd',
+  song: songQuery ? songQuery : 'https://soundcloud.com/xeni_kott/jan-jelinek-loop-finding-jazz-records',
+  dark: false,
+  getFonts: false
+}, function (err, src, data, div) {
   if (err) {
-    alert('Problem fetching song from soundcloud. Check the URL, if this problem persists try a different song. Not all have correct permissions to be streamed.')
-    throw err
+    alert('Problem fetching song from soundcloud. Check the URL, if this problem persists try a different song. Not all have correct permissions to be streamed.');
+    throw err;
   }
   audio.src = src;
-})
+});
 
-const CurveContext = function () {
+var CurveContext = function CurveContext() {
   this.location = [0, 0];
   this.lines = [];
   return this;
@@ -72,13 +77,15 @@ CurveContext.prototype.lineTo = function (x, y) {
 };
 
 CurveContext.prototype.bezierCurveTo = function (cx1, cy1, cx2, cy2, ex, ey) {
-  const bezierPoints = bezier(this.location, [cx1, cy1], [cx2, cy2], [ex, ey]);//, Math.max(width, height) / 2);
-  bezierPoints.forEach((point, i) => {
+  var _this = this;
+
+  var bezierPoints = bezier(this.location, [cx1, cy1], [cx2, cy2], [ex, ey]); //, Math.max(width, height) / 2);
+  bezierPoints.forEach(function (point, i) {
     if (i > 0) {
-      this.lines.push(this.location);
-      this.lines.push(point);
+      _this.lines.push(_this.location);
+      _this.lines.push(point);
     }
-    this.location = point;
+    _this.location = point;
   });
 };
 
@@ -90,32 +97,26 @@ CurveContext.prototype.clear = function () {
   this.lines = [];
 };
 
+var curveContext = new CurveContext();
 
-const curveContext = new CurveContext();
+var lineGenerator = d3.line().x(function (d) {
+  return x(d[0]);
+}).y(function (d) {
+  return y(d[1]);
+})
+// .curve(d3.curveBasis)
+.context(curveContext);
 
-const lineGenerator = d3.line()
-    .x(function(d) {
-      return x(d[0]);
-    })
-    .y(function(d) {
-      return y(d[1]);
-    })
-    // .curve(d3.curveBasis)
-    .context(curveContext);
+window.addEventListener('resize', fit(canvas), false);
 
-
-window.addEventListener('resize', fit(canvas), false)
-
-const regl = require('regl')({
-  canvas: canvas
-});
+var regl = require('regl')(context || canvas);
 var tween = require('regl-tween')(regl);
 
-const generatePoints = () => {
+var generatePoints = function generatePoints() {
   curveContext.clear();
-  const newPoints = []
-  for (let i = 0; i < 100; i++) {
-    newPoints.push([i / 100, Math.random()]);
+  var newPoints = [];
+  for (var _i = 0; _i < 100; _i++) {
+    newPoints.push([_i / 100, Math.random()]);
   }
   lineGenerator(newPoints);
   console.log('output length: ' + curveContext.getLinePoints().length);
@@ -130,7 +131,7 @@ const generatePoints = () => {
 //   positionBuffer.update(curveContext.getLinePoints());
 // }, 1000);
 
-const createFramebuffer = () => {
+var createFramebuffer = function createFramebuffer() {
   return regl.framebuffer({
     color: regl.texture({
       width: width,
@@ -140,41 +141,15 @@ const createFramebuffer = () => {
     }),
     depth: false
   });
-}
+};
 
+var backbuffer = createFramebuffer();
+var fbo1 = createFramebuffer();
+var fbo2 = createFramebuffer();
 
-const backbuffer = createFramebuffer();
-const fbo1 = createFramebuffer();
-const fbo2 = createFramebuffer();
+var blurFrag = "\n  precision mediump float;\n\n  vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 d) {\n    vec4 color = vec4(0.0);\n    vec2 off1 = vec2(1.3846153846) * d;\n    vec2 off2 = vec2(3.2307692308) * d;\n    color += texture2D(image, uv) * 0.3270270270;\n    color += texture2D(image, uv + (off1 / resolution)) * 0.4262162162;\n    color += texture2D(image, uv - (off1 / resolution)) * 0.4262162162;\n    color += texture2D(image, uv + (off2 / resolution)) * 0.0802702703;\n    color += texture2D(image, uv - (off2 / resolution)) * 0.0802702703;\n\n    return color;\n  }\n\n  uniform sampler2D fbo;\n  uniform vec2 resolution;\n  uniform vec2 direction;\n  varying vec2 uv;\n\n  void main() {\n    gl_FragColor = blur(fbo, uv, resolution.xy, direction);\n  }\n";
 
-
-const blurFrag = `
-  precision mediump float;
-
-  vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 d) {
-    vec4 color = vec4(0.0);
-    vec2 off1 = vec2(1.3846153846) * d;
-    vec2 off2 = vec2(3.2307692308) * d;
-    color += texture2D(image, uv) * 0.3270270270;
-    color += texture2D(image, uv + (off1 / resolution)) * 0.4262162162;
-    color += texture2D(image, uv - (off1 / resolution)) * 0.4262162162;
-    color += texture2D(image, uv + (off2 / resolution)) * 0.0802702703;
-    color += texture2D(image, uv - (off2 / resolution)) * 0.0802702703;
-
-    return color;
-  }
-
-  uniform sampler2D fbo;
-  uniform vec2 resolution;
-  uniform vec2 direction;
-  varying vec2 uv;
-
-  void main() {
-    gl_FragColor = blur(fbo, uv, resolution.xy, direction);
-  }
-`;
-
-const blur = regl({
+var blur = regl({
   frag: blurFrag,
   uniforms: {
     fbo: regl.prop('fbo'),
@@ -182,82 +157,35 @@ const blur = regl({
     direction: regl.prop('direction')
   },
 
-  vert: `
-  precision mediump float;
-  attribute vec2 position;
-  varying vec2 uv;
-  void main () {
-    uv = position;
-    gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
-  }`,
+  vert: "\n  precision mediump float;\n  attribute vec2 position;\n  varying vec2 uv;\n  void main () {\n    uv = position;\n    gl_Position = vec4(1.0 - 2.0 * position, 0, 1);\n  }",
 
   attributes: {
-    position: [
-      -2, 0,
-      0, -2,
-      2, 2]
+    position: [-2, 0, 0, -2, 2, 2]
   },
 
   count: 3,
   framebuffer: regl.prop('framebuffer')
 });
 
-const blend = regl({
-  frag: `
-    precision mediump float;
-    uniform sampler2D backbuffer;
-    uniform sampler2D blur;
-    varying vec2 uv;
-
-    void main() {
-      vec4 bb = texture2D(backbuffer, uv);
-      vec4 bl = texture2D(blur, uv);
-      gl_FragColor = 0.5 * bl + bb;
-    }
-
-  `,
+var blend = regl({
+  frag: "\n    precision mediump float;\n    uniform sampler2D backbuffer;\n    uniform sampler2D blur;\n    varying vec2 uv;\n\n    void main() {\n      vec4 bb = texture2D(backbuffer, uv);\n      vec4 bl = texture2D(blur, uv);\n      gl_FragColor = 0.5 * bl + bb;\n    }\n\n  ",
   uniforms: {
     backbuffer: regl.prop('backbuffer'),
     blur: regl.prop('blur')
   },
 
-  vert: `
-  precision mediump float;
-  attribute vec2 position;
-  varying vec2 uv;
-  void main () {
-    uv = position;
-    gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
-  }`,
+  vert: "\n  precision mediump float;\n  attribute vec2 position;\n  varying vec2 uv;\n  void main () {\n    uv = position;\n    gl_Position = vec4(1.0 - 2.0 * position, 0, 1);\n  }",
 
   attributes: {
-    position: [
-      -2, 0,
-      0, -2,
-      2, 2]
+    position: [-2, 0, 0, -2, 2, 2]
   },
 
   count: 3
 });
 
-
-const vert = `
-  precision mediump float;
-  attribute vec2 position;
-
-  void main() {
-    gl_Position = vec4(position, 0, 1);
-  }
-`;
-const lineFrag = `
-  precision mediump float;
-  uniform vec4 color;
-
-  void main() {
-    gl_FragColor = color;
-  }
-`;
-const line = regl({
+var vert = "\n  precision mediump float;\n  attribute vec2 position;\n\n  void main() {\n    gl_Position = vec4(position, 0, 1);\n  }\n";
+var lineFrag = "\n  precision mediump float;\n  uniform vec4 color;\n\n  void main() {\n    gl_FragColor = color;\n  }\n";
+var line = regl({
   vert: vert,
   frag: lineFrag,
   attributes: {
@@ -272,29 +200,33 @@ const line = regl({
   framebuffer: regl.prop('framebuffer')
 });
 
+var linePoints = void 0;
+var i = 0;
+var colorScale = chroma.scale(['green', 'white']).domain([0, 256 * 1.5 * 1024]);
 
-let linePoints;
-let i = 0;
-const colorScale = chroma.scale(['green', 'white']).domain([0, 256 * 1.5 * 1024]);
+var lineLims = regl.limits.lineWidthDims;
+var lineScale = scale.scaleLinear().domain([0, 256 * 1024]).range([Math.min(Math.max(lineLims[0], 2), lineLims[1]), Math.min(5, lineLims[1])]);
+var size, wm, anim, sum, col;
 
-const lineLims = regl.limits.lineWidthDims;
-const lineScale = scale.scaleLinear().domain([0, 256 * 1024]).range([Math.min(Math.max(lineLims[0], 2), lineLims[1]), Math.min(5, lineLims[1])]);
-let size, wm, anim, sum, col;
+var waveform = new Uint8Array(1024);
 
-const waveform = new Uint8Array(1024);
+var iterations = 4;
+regl.frame(function (_ref) {
+  var time = _ref.time;
+  var viewportWidth = _ref.viewportWidth;
+  var viewportHeight = _ref.viewportHeight;
 
-const iterations = 4;
-regl.frame(({ time, viewportWidth, viewportHeight }) => {
 
   regl.clear({
-    color: [0, 0, 0, 1],
-    // depth: 1
-  })
+    color: [0, 0, 0, 1]
+  });
 
-
-
-  regl({framebuffer: backbuffer})(() => { regl.clear({ color: [0, 0, 0, 1] });  });
-  regl({framebuffer: fbo2 })(() => { regl.clear({ color: [0, 0, 0, 1] });  });
+  regl({ framebuffer: backbuffer })(function () {
+    regl.clear({ color: [0, 0, 0, 1] });
+  });
+  regl({ framebuffer: fbo2 })(function () {
+    regl.clear({ color: [0, 0, 0, 1] });
+  });
   // regl({framebuffer: fbo1},  () => { regl.clear({ color: [0, 0, 0, 1] });  });
   // regl({framebuffer: fbo2},  () => { regl.clear({ color: [0, 0, 0, 1], depth: 1 });  });
 
@@ -320,7 +252,7 @@ regl.frame(({ time, viewportWidth, viewportHeight }) => {
   }
 
   if (analyser) {
-    for (var channel = 0; channel < 2; channel++ ) {
+    for (var channel = 0; channel < 2; channel++) {
       analyser.frequencies(waveform, channel);
       size = waveform.length;
       curveContext.clear();
@@ -332,9 +264,9 @@ regl.frame(({ time, viewportWidth, viewportHeight }) => {
 
       wm = [];
       sum = 0;
-      waveform.forEach((d, i) => {
+      waveform.forEach(function (d, i) {
 
-        wm.push([ channel === 1 ? -i : i, d ]);
+        wm.push([channel === 1 ? -i : i, d]);
         sum += d;
         // wm.push([ -i, d ]);
       });
@@ -354,7 +286,9 @@ regl.frame(({ time, viewportWidth, viewportHeight }) => {
         position: linePoints,
         // color: colors,
         lineWidth: Math.round(lineScale(sum)),
-        color: col.rgb().map((d) => (d / 255)).concat(0.85),//[0.0, 0.8, 0, 0.85],
+        color: col.rgb().map(function (d) {
+          return d / 255;
+        }).concat(0.85), //[0.0, 0.8, 0, 0.85],
         count: linePoints.length
       });
       // wm = [];
@@ -379,11 +313,10 @@ regl.frame(({ time, viewportWidth, viewportHeight }) => {
       //   color: [0.0, 0.8, 0, 0.85],
       //   count: linePoints.length
       // });
-
     }
   }
 
-  anim = (Math.sin(time) * 0.5 + 0.5);
+  anim = Math.sin(time) * 0.5 + 0.5;
 
   for (var i = 0; i < iterations; i++) {
     // we will approximate a larger blur by using
@@ -415,21 +348,19 @@ regl.frame(({ time, viewportWidth, viewportHeight }) => {
     }
   }
 
-
   blend({
     backbuffer: backbuffer,
     blur: fbo2
   });
-})
+});
 
-
-const div = document.createElement('div');
+var div = document.createElement('div');
 div.style.position = 'absolute';
 div.style.bottom = '120px';
 div.style.left = '40%';
 div.style.width = '20%';
 
-const input = document.createElement('input');
+var input = document.createElement('input');
 input.type = 'text';
 input.style.width = '100%';
 input.style.backgroundColor = 'black';
@@ -439,17 +370,17 @@ input.style.borderWidth = 0;
 input.style.paddingBottom = '7px';
 input.style.borderBottomStyle = 'solid';
 input.style.borderBottomWidth = '1px';
-input.placeholder = 'Enter SoundCloud track URL'
+input.placeholder = 'Enter SoundCloud track URL';
 
 div.appendChild(input);
 
-const enterDiv = document.createElement('div');
+var enterDiv = document.createElement('div');
 enterDiv.style.position = 'absolute';
 enterDiv.style.bottom = '90px';
 enterDiv.style.left = '45%';
 enterDiv.style.width = '10%';
 
-const submit = document.createElement('input');
+var submit = document.createElement('input');
 submit.type = 'submit';
 submit.style.width = '100%';
 submit.style.backgroundColor = 'black';
@@ -470,8 +401,7 @@ submit.onclick = function () {
   //   if (err) throw err
   //   audio.src = src;
   // })
-
-}
+};
 
 enterDiv.appendChild(submit);
 
